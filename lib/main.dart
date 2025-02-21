@@ -8,11 +8,73 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return new MaterialApp(
       title: "List in Flutter",
+      theme: ThemeData.dark(),
       home: new Scaffold(
-        appBar: new AppBar(
-          title: Text("BeReal"),
+        appBar: AppBar(
+          centerTitle: true,
+          title: Row(
+            mainAxisSize: MainAxisSize.min, // Занимать минимум места
+            mainAxisAlignment: MainAxisAlignment.center, // Центрировать по горизонтали
+            children: [
+              Text(
+                "Glimpse",
+                style: TextStyle(
+                    color: Colors.blueGrey[200], fontFamily: "Playball", fontSize: 50),
+              ),
+            ],
+          ),
+          actions: [ // Это переместит аватар в правый край AppBar
+            Padding(
+              padding: EdgeInsets.only(right: 16.0), // Отступ справа
+              child: CircleAvatar(
+                backgroundImage: AssetImage('assets/images/user_icon.jpg'),
+                radius: 20,
+              ),
+            ),
+          ],
         ),
-        body: RandomWords(),
+        backgroundColor: Colors.black,
+        body: Column(  // Используем Column, чтобы разместить окошко и ListView друг под другом
+          children: [
+            Container(
+              margin: EdgeInsets.all(10.0),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10.0),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.blueGrey[400]!,
+                    Colors.blueGrey[900]!,
+                  ],
+                ),
+              ),
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10.0),
+                    child: Image.asset(
+                      'assets/images/selfie.jpg',
+                      width: 170,
+                      height: 300,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text(
+                      'Подпись к изображению',
+                      style: TextStyle(color: Colors.white, fontFamily: "Raleway", fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: RandomWords(),
+            ),
+          ], //children
+        ),
       ),
     );
   }
@@ -28,13 +90,13 @@ class RandomWords extends StatefulWidget {
 class RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
 
-  final _biggerFont = const TextStyle(fontSize: 18.0);
+  final _biggerFont = const TextStyle(fontSize: 18.0, color: Colors.white, fontFamily: "Raleway",fontWeight: FontWeight.w600);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold (
       appBar: AppBar(
-        title: Text('Startup Name Generator'),
+        title: Text('Friends', style: TextStyle(color: Colors.blueGrey[200], fontFamily: "Playball", fontSize: 30)),
       ),
       body: _buildSuggestions(),
     );
@@ -59,7 +121,17 @@ class RandomWordsState extends State<RandomWords> {
 
   Widget _buildRow(WordPair pair) {
     return new ListTile(
+      leading: CircleAvatar(
+        backgroundColor: Colors.transparent,
+        backgroundImage: AssetImage('assets/images/user_icon.jpg'),
+        radius: 18,
+      ),
       title: new Text(pair.asPascalCase, style: _biggerFont),
+      trailing: CircleAvatar(
+        backgroundColor: Colors.transparent,
+        backgroundImage: AssetImage('assets/images/bell.png'),
+        radius: 18,
+      ),
     );
   }
 }

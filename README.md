@@ -1,6 +1,7 @@
-# glimpse
+# Glimpse
 
-A new Flutter project.
+Coursework in the form of an Android application in Flutter.
+Nelly Agapova, VSU, Faculty of computer science.
 
 ## Getting Started
 

@@ -59,7 +59,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
+  assets:
+    - assets/images/ # Рекомендуется, чтобы включить все изображения в этой папке
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 
@@ -69,6 +70,27 @@ flutter:
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
 
+  fonts:
+    - family: Playball
+      fonts:
+        - asset: assets/fonts/Playball-Regular.ttf
+    - family: Philosopher
+      fonts:
+        - asset: assets/fonts/Philosopher-Regular.ttf
+          weight: 400 # Regular
+          style: normal
+        - asset: assets/fonts/Philosopher-Italic.ttf
+          weight: 400 # Regular
+          style: italic
+        - asset: assets/fonts/Philosopher-Bold.ttf
+          weight: 700 # Bold
+          style: normal
+        - asset: assets/fonts/Philosopher-BoldItalic.ttf
+          weight: 700 # Bold
+          style: italic
+    - family: Raleway
+      fonts:
+        - asset: assets/fonts/Raleway-VariableFont.ttf
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a
   # "family" key with the font family name, and a "fonts" key with a

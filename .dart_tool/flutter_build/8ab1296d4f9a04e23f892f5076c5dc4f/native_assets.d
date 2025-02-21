@@ -1,0 +1,1 @@
+ C:\\Users\\agapo\\AndroidStudioProjects\\Glimpse\\.dart_tool\\flutter_build\\8ab1296d4f9a04e23f892f5076c5dc4f\\native_assets.yaml: 
