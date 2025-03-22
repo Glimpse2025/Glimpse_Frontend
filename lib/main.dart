@@ -1,7 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
+import 'package:glimpse/Settings.dart';
+import 'package:glimpse/authentication.dart';
 
-void main() => runApp(new MyApp());
+void main() => runApp(new AppStart());
+
+class AppStart extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: "Glimpse",
+      theme: ThemeData.dark(),
+      home: Authentication(),
+    );
+  }
+}
 
 class MyApp extends StatelessWidget {
   @override
@@ -12,6 +25,8 @@ class MyApp extends StatelessWidget {
       home: new Scaffold(
         appBar: AppBar(
           centerTitle: true,
+          surfaceTintColor: Colors.transparent,
+          backgroundColor: Colors.black,
           title: Row(
             mainAxisSize: MainAxisSize.min, // Занимать минимум места
             mainAxisAlignment: MainAxisAlignment.center, // Центрировать по горизонтали
@@ -23,13 +38,25 @@ class MyApp extends StatelessWidget {
               ),
             ],
           ),
-          actions: [ // Это переместит аватар в правый край AppBar
-            Padding(
-              padding: EdgeInsets.only(right: 16.0), // Отступ справа
-              child: CircleAvatar(
-                backgroundImage: AssetImage('assets/images/user_icon.jpg'),
-                radius: 20,
-              ),
+          actions: [
+            Builder(
+              builder: (BuildContext context) {
+                return Padding(
+                  padding: EdgeInsets.only(right: 16.0),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => Settings()),
+                      );
+                    },
+                    child: CircleAvatar(
+                      backgroundImage: AssetImage('assets/images/user_icon.jpg'),
+                      radius: 20,
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -96,6 +123,8 @@ class RandomWordsState extends State<RandomWords> {
   Widget build(BuildContext context) {
     return Scaffold (
       appBar: AppBar(
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: Colors.black,
         title: Text('Friends', style: TextStyle(color: Colors.blueGrey[200], fontFamily: "Playball", fontSize: 30)),
       ),
       body: _buildSuggestions(),
