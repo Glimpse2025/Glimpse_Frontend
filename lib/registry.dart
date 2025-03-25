@@ -1,36 +1,37 @@
 import 'package:flutter/material.dart';
-import 'package:glimpse/main.dart';
-import 'package:glimpse/registry.dart'; // Import Registry page
+import 'package:glimpse/authentication.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class Authentication extends StatefulWidget {
+class Registry extends StatefulWidget {
   @override
-  _AuthenticationState createState() => _AuthenticationState();
+  _RegistryState createState() => _RegistryState();
 }
 
-class _AuthenticationState extends State<Authentication> {
+class _RegistryState extends State<Registry> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _usernameController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _usernameController.dispose(); // Dispose
     super.dispose();
   }
 
-  Future<void> _login() async {
+  Future<void> _signin() async {
     setState(() {
       _isLoading = true;
     });
 
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
+    final String username = _usernameController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    if (email.isEmpty || password.isEmpty || username.isEmpty) {
       _showError("Пожалуйста, заполните все поля.");
       setState(() {
         _isLoading = false;
@@ -38,36 +39,44 @@ class _AuthenticationState extends State<Authentication> {
       return;
     }
 
-    final Uri apiUrl = Uri.parse('http://127.0.0.1:5000/api/login');
+    final Uri apiUrl = Uri.parse('http://127.0.0.1:5000/api/registry');
 
     try {
       final response = await http.post(
         apiUrl,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'username': username,
+        }),
       ).timeout(const Duration(seconds: 10));
 
-      if (response.statusCode == 200) {
-        // Аутентификация прошла успешно
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        final String token = data['token']; // Предполагаем, что API возвращает токен
+      if (response.statusCode == 201) {
+        // Registration successful
+        //final Map<String, dynamic> data = jsonDecode(response.body); // If expecting a body
+        //final String token = data['token']; // If your backend returns a token on registration
 
-        // Сохранение токена
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', token);
+        _showSuccess("Регистрация прошла успешно.  Войдите в свой аккаунт."); // Show success message
 
-        // Переход на главный экран
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => MyApp()),
+          MaterialPageRoute(builder: (context) => Authentication()),
         );
       } else {
-        // Аутентификация не удалась
-        print('Login failed with status: ${response.statusCode}. Body: ${response.body}');
-        _showError("Неверная почта или пароль.");
+        // Registration failed
+        print('Registration failed with status: ${response.statusCode}. Body: ${response.body}');
+
+        Map<String, dynamic> errorResponse;
+        try {
+          errorResponse = jsonDecode(response.body);
+          _showError(errorResponse['message'] ?? "Ошибка регистрации. Попробуйте еще раз.");
+        } catch (e) {
+          _showError("Ошибка регистрации.  Неверный формат ответа сервера.");
+        }
       }
     } catch (error) {
-      print("Error during login: $error");
+      print("Error during registration: $error");
       _showError("Ошибка при подключении к серверу.");
     } finally {
       setState(() {
@@ -75,6 +84,8 @@ class _AuthenticationState extends State<Authentication> {
       });
     }
   }
+
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -83,6 +94,16 @@ class _AuthenticationState extends State<Authentication> {
       ),
     );
   }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +116,7 @@ class _AuthenticationState extends State<Authentication> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Text(
-                "Welcome to Glimpse!",
+                "Create a Glimpse Account!",
                 style: TextStyle(
                   fontSize: 24,
                   color: Colors.blueGrey[200],
@@ -103,6 +124,16 @@ class _AuthenticationState extends State<Authentication> {
                 ),
               ),
               const SizedBox(height: 20),
+              TextField(
+                controller: _usernameController,
+                decoration: InputDecoration(
+                  labelText: 'Имя пользователя',
+                  labelStyle: TextStyle(color: Colors.blueGrey[200]),
+                  border: const OutlineInputBorder(),
+                ),
+                style: const TextStyle(color: Colors.white),
+              ),
+              const SizedBox(height: 10),
               TextField(
                 controller: _emailController,
                 decoration: InputDecoration(
@@ -125,27 +156,15 @@ class _AuthenticationState extends State<Authentication> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _isLoading ? null : _login,
+                onPressed: _isLoading ? null : _signin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueGrey[700],
                 ),
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
-                  'Войти',
+                  'Зарегистрироваться',
                   style: TextStyle(color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => Registry()),
-                  );
-                },
-                child:
-                const Text('Зарегистрироваться', style: TextStyle(color: Color(0xFFB0BEC5)),
                 ),
               ),
             ],
