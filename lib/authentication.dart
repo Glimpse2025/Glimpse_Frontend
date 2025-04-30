@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:glimpse/ApiClient.dart';
 import 'package:glimpse/main.dart';
-import 'package:glimpse/registry.dart'; // Import Registry page
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:glimpse/registry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Authentication extends StatefulWidget {
@@ -38,19 +37,13 @@ class _AuthenticationState extends State<Authentication> {
       return;
     }
 
-    final Uri apiUrl = Uri.parse('http://127.0.0.1:5000/api/login');
-
     try {
-      final response = await http.post(
-        apiUrl,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
-      ).timeout(const Duration(seconds: 10));
+      // Используйте ApiClient для вызова API
+      final response = await ApiClient.apiService.login(email, password);
 
-      if (response.statusCode == 200) {
+      if (response.containsKey('token')) {
         // Аутентификация прошла успешно
-        final Map<String, dynamic> data = jsonDecode(response.body);
-        final String token = data['token']; // Предполагаем, что API возвращает токен
+        final String token = response['token'];
 
         // Сохранение токена
         final prefs = await SharedPreferences.getInstance();
@@ -63,8 +56,7 @@ class _AuthenticationState extends State<Authentication> {
         );
       } else {
         // Аутентификация не удалась
-        print('Login failed with status: ${response.statusCode}. Body: ${response.body}');
-        _showError("Неверная почта или пароль.");
+        _showError(response['message'] ?? "Неверная почта или пароль.");
       }
     } catch (error) {
       print("Error during login: $error");
@@ -75,6 +67,7 @@ class _AuthenticationState extends State<Authentication> {
       });
     }
   }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -132,9 +125,9 @@ class _AuthenticationState extends State<Authentication> {
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
-                  'Войти',
-                  style: TextStyle(color: Colors.white),
-                ),
+                        'Войти',
+                        style: TextStyle(color: Colors.white),
+                      ),
               ),
               const SizedBox(height: 10),
               TextButton(
@@ -144,8 +137,9 @@ class _AuthenticationState extends State<Authentication> {
                     MaterialPageRoute(builder: (context) => Registry()),
                   );
                 },
-                child:
-                const Text('Зарегистрироваться', style: TextStyle(color: Color(0xFFB0BEC5)),
+                child: const Text(
+                  'Зарегистрироваться',
+                  style: TextStyle(color: Color(0xFFB0BEC5)),
                 ),
               ),
             ],

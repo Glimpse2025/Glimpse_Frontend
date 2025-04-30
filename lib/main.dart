@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
 import 'package:glimpse/Settings.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:glimpse/authentication.dart';
 
 void main() => runApp(new AppStart());
@@ -16,7 +18,78 @@ class AppStart extends StatelessWidget {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  File? _image;
+  double _opacity = 0.5;
+  final ImagePicker _picker = ImagePicker();
+
+  Future _getImage() async {
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.camera);
+
+    setState(() {
+      if (pickedFile != null) {
+        _image = File(pickedFile.path);
+        _opacity = 1.0;
+        _uploadImage(_image!);
+      } else {
+        print('No image selected.');
+        _opacity = 0.5;
+      }
+    });
+  }
+
+  Future<void> _uploadImage(File imageFile) async {
+    // Замените на URL вашего API endpoint (бэкенда)
+    final String apiUrl = 'http://your-backend-url/upload'; // Пример
+
+    try {
+      // Создаем multipart request
+      var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
+
+      // Добавляем файл к request
+      var stream = http.ByteStream(DelegatingStream.typed(imageFile.openRead()));
+      var length = await imageFile.length();
+
+      var multipartFile = http.MultipartFile(
+        'image', // Ключ должен соответствовать тому, что ожидает бэкенд
+        stream,
+        length,
+        filename: imageFile.path.split('/').last,
+      );
+
+      request.files.add(multipartFile);
+
+      // Отправляем request
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        // Обрабатываем успешный ответ
+        var responseString = await response.stream.bytesToString();
+        var jsonResponse = jsonDecode(responseString);
+        print('Изображение успешно загружено. Ответ: $jsonResponse');
+        // Здесь можно обновить UI, сохранить URL из ответа и т.д.
+
+        // Пример получения URL из ответа (если бэкенд его возвращает)
+        String? imageUrl = jsonResponse['image_url'];
+        if (imageUrl != null) {
+          // Сохраняем URL в базу данных или используем для отображения
+        }
+
+      } else {
+        // Обрабатываем ошибку
+        print('Ошибка загрузки изображения: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Обрабатываем исключения
+      print('Произошла ошибка при отправке запроса: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
@@ -28,8 +101,8 @@ class MyApp extends StatelessWidget {
           surfaceTintColor: Colors.transparent,
           backgroundColor: Colors.black,
           title: Row(
-            mainAxisSize: MainAxisSize.min, // Занимать минимум места
-            mainAxisAlignment: MainAxisAlignment.center, // Центрировать по горизонтали
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 "Glimpse",
@@ -61,7 +134,7 @@ class MyApp extends StatelessWidget {
           ],
         ),
         backgroundColor: Colors.black,
-        body: Column(  // Используем Column, чтобы разместить окошко и ListView друг под другом
+        body: Column(
           children: [
             Container(
               margin: EdgeInsets.all(10.0),
@@ -78,13 +151,26 @@ class MyApp extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10.0),
-                    child: Image.asset(
-                      'assets/images/selfie.jpg',
-                      width: 170,
-                      height: 300,
-                      fit: BoxFit.cover,
+                  InkWell(
+                    onTap: _getImage,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10.0),
+                      child: Opacity(
+                        opacity: _opacity,
+                        child: _image == null
+                            ? Image.asset(
+                          'assets/images/black_gradient.jpeg',
+                          width: 170,
+                          height: 300,
+                          fit: BoxFit.cover,
+                        )
+                            : Image.file(
+                          _image!,
+                          width: 170,
+                          height: 300,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                   ),
                   Padding(
@@ -100,7 +186,7 @@ class MyApp extends StatelessWidget {
             Expanded(
               child: RandomWords(),
             ),
-          ], //children
+          ],
         ),
       ),
     );

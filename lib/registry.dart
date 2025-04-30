@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:glimpse/ApiClient.dart';
 import 'package:glimpse/authentication.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 
 class Registry extends StatefulWidget {
   @override
@@ -18,7 +17,7 @@ class _RegistryState extends State<Registry> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _usernameController.dispose(); // Dispose
+    _usernameController.dispose();
     super.dispose();
   }
 
@@ -39,41 +38,22 @@ class _RegistryState extends State<Registry> {
       return;
     }
 
-    final Uri apiUrl = Uri.parse('http://127.0.0.1:5000/api/registry');
-
     try {
-      final response = await http.post(
-        apiUrl,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-          'username': username,
-        }),
-      ).timeout(const Duration(seconds: 10));
+      // Используйте ApiClient для вызова API регистрации
+      final response =
+          await ApiClient.apiService.registry(email, password, username);
 
-      if (response.statusCode == 201) {
-        // Registration successful
-        //final Map<String, dynamic> data = jsonDecode(response.body); // If expecting a body
-        //final String token = data['token']; // If your backend returns a token on registration
-
-        _showSuccess("Регистрация прошла успешно.  Войдите в свой аккаунт."); // Show success message
-
+      if (response.containsKey('message') &&
+          response['message'] == 'User registered successfully') {
+        _showSuccess("Регистрация прошла успешно. Войдите в свой аккаунт.");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => Authentication()),
         );
       } else {
-        // Registration failed
-        print('Registration failed with status: ${response.statusCode}. Body: ${response.body}');
-
-        Map<String, dynamic> errorResponse;
-        try {
-          errorResponse = jsonDecode(response.body);
-          _showError(errorResponse['message'] ?? "Ошибка регистрации. Попробуйте еще раз.");
-        } catch (e) {
-          _showError("Ошибка регистрации.  Неверный формат ответа сервера.");
-        }
+        // Обработка ошибок регистрации
+        _showError(
+            response['message'] ?? "Ошибка регистрации. Попробуйте еще раз.");
       }
     } catch (error) {
       print("Error during registration: $error");
@@ -84,7 +64,6 @@ class _RegistryState extends State<Registry> {
       });
     }
   }
-
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -104,11 +83,28 @@ class _RegistryState extends State<Registry> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
+      appBar: AppBar(
+        // Added AppBar
+        backgroundColor: Colors.black,
+        leading: IconButton(
+          // Add back button
+          icon: Icon(Icons.arrow_back, color: Colors.blueGrey[200]),
+          onPressed: () {
+            Navigator.pop(context); // Go back to the previous screen
+          },
+        ),
+        title: Text(
+          "Регистрация",
+          style: TextStyle(
+            color: Colors.blueGrey[200],
+            fontFamily: "Playball",
+          ),
+        ),
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
@@ -163,9 +159,9 @@ class _RegistryState extends State<Registry> {
                 child: _isLoading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
-                  'Зарегистрироваться',
-                  style: TextStyle(color: Colors.white),
-                ),
+                        'Зарегистрироваться',
+                        style: TextStyle(color: Colors.white),
+                      ),
               ),
             ],
           ),
