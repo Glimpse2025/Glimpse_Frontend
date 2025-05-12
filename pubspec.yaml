@@ -49,10 +49,17 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
-
+flutter_launcher_icons:
+  android: true   # Закомментируйте, чтобы отключить генерацию для Android
+  #ios: false     # Закомментируйте, чтобы отключить генерацию для iOS
+  image_path: "assets/images/icon.jpg" # Путь к вашему изображению иконки
+  remove_alpha_ios: true # Убирает альфа-канал для iOS иконок (полезно, если иконки выглядят плохо с альфа-каналом).
+  adaptive_icon_background: "#ffffff" # Цвет фона для адаптивной иконки (необязательно, если нужно).  Используйте HEX-код.
+  adaptive_icon_foreground: "assets/images/icon.jpg"
 # The following section is specific to Flutter packages.
 flutter:
 
