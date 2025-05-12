@@ -1,7 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
+import 'package:glimpse/ApiClient.dart';
 import 'package:glimpse/Settings.dart';
+import 'package:glimpse/models.dart';
+import 'package:glimpse/token_manager.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:glimpse/authentication.dart';
 
@@ -13,7 +18,21 @@ class AppStart extends StatelessWidget {
     return MaterialApp(
       title: "Glimpse",
       theme: ThemeData.dark(),
-      home: Authentication(),
+      home: FutureBuilder<String?>(
+        // Используем FutureBuilder
+        future: getToken(), // Получаем токен асинхронно
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return CircularProgressIndicator(); // Пока ждем, показываем индикатор загрузки
+          } else if (snapshot.hasData && snapshot.data != null) {
+            // Если есть токен, переходим на MyApp
+            return MyApp();
+          } else {
+            // Если нет токена, на Authentication
+            return Authentication();
+          }
+        },
+      ),
     );
   }
 }
@@ -24,18 +43,65 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  User? _user;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final token = await getToken();
+    if (token != null) {
+      try {
+        final response = await http.get(
+          Uri.parse('${ApiClient.baseUrl}/api/user'),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+
+        if (response.statusCode == 200) {
+          final userData = jsonDecode(response.body);
+          setState(() {
+            _user = User.fromJson(userData);
+            _isLoading = false;
+          });
+        } else {
+          print('Failed to load user data: ${response.statusCode}');
+          // Обработайте ошибку, например, удалите токен и перенаправьте на страницу входа
+          await deleteToken();
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => Authentication()),
+          );
+        }
+      } catch (e) {
+        print('Error loading user data: $e');
+        // Обработайте ошибку подключения
+      }
+    } else {
+      // Если токена нет, перенаправляем на страницу входа
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => Authentication()),
+      );
+    }
+  }
+
   File? _image;
   double _opacity = 0.5;
   final ImagePicker _picker = ImagePicker();
 
   Future _getImage() async {
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.camera);
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.camera);
 
     setState(() {
       if (pickedFile != null) {
         _image = File(pickedFile.path);
         _opacity = 1.0;
-        _uploadImage(_image!);
+        uploadImage(_image!);
       } else {
         print('No image selected.');
         _opacity = 0.5;
@@ -43,50 +109,39 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  Future<void> _uploadImage(File imageFile) async {
-    // Замените на URL вашего API endpoint (бэкенда)
-    final String apiUrl = 'http://your-backend-url/upload'; // Пример
+  Future<String?> uploadImage(File imageFile) async {
+    var uri = Uri.parse("${ApiClient.baseUrl}/api/upload");
 
+    // Создаем multipart request
+    var request = http.MultipartRequest("POST", uri);
+
+    // Добавляем файл к request
+    var multipartFile = await http.MultipartFile.fromPath(
+      'image', // Ключ должен соответствовать тому, что ожидает backend
+      imageFile.path,
+    );
+
+    request.files.add(multipartFile);
+
+    // Отправляем request
     try {
-      // Создаем multipart request
-      var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
-
-      // Добавляем файл к request
-      var stream = http.ByteStream(DelegatingStream.typed(imageFile.openRead()));
-      var length = await imageFile.length();
-
-      var multipartFile = http.MultipartFile(
-        'image', // Ключ должен соответствовать тому, что ожидает бэкенд
-        stream,
-        length,
-        filename: imageFile.path.split('/').last,
-      );
-
-      request.files.add(multipartFile);
-
-      // Отправляем request
       var response = await request.send();
 
       if (response.statusCode == 200) {
-        // Обрабатываем успешный ответ
+        // Получаем тело ответа
         var responseString = await response.stream.bytesToString();
+        // Декодируем JSON
         var jsonResponse = jsonDecode(responseString);
-        print('Изображение успешно загружено. Ответ: $jsonResponse');
-        // Здесь можно обновить UI, сохранить URL из ответа и т.д.
-
-        // Пример получения URL из ответа (если бэкенд его возвращает)
-        String? imageUrl = jsonResponse['image_url'];
-        if (imageUrl != null) {
-          // Сохраняем URL в базу данных или используем для отображения
-        }
-
+        // Получаем URL изображения
+        return jsonResponse[
+            'image_url']; // Ключ должен соответствовать тому, что возвращает backend
       } else {
-        // Обрабатываем ошибку
         print('Ошибка загрузки изображения: ${response.statusCode}');
+        return null;
       }
     } catch (e) {
-      // Обрабатываем исключения
-      print('Произошла ошибка при отправке запроса: $e');
+      print('Ошибка отправки запроса: $e');
+      return null;
     }
   }
 
@@ -107,7 +162,9 @@ class _MyAppState extends State<MyApp> {
               Text(
                 "Glimpse",
                 style: TextStyle(
-                    color: Colors.blueGrey[200], fontFamily: "Playball", fontSize: 50),
+                    color: Colors.blueGrey[200],
+                    fontFamily: "Playball",
+                    fontSize: 50),
               ),
             ],
           ),
@@ -124,7 +181,9 @@ class _MyAppState extends State<MyApp> {
                       );
                     },
                     child: CircleAvatar(
-                      backgroundImage: AssetImage('assets/images/user_icon.jpg'),
+                      backgroundImage: _user?.profilePic != null
+                          ? NetworkImage(_user!.profilePic!)
+                          : const AssetImage('assets/images/user_icon.jpg'),
                       radius: 20,
                     ),
                   ),
@@ -159,17 +218,17 @@ class _MyAppState extends State<MyApp> {
                         opacity: _opacity,
                         child: _image == null
                             ? Image.asset(
-                          'assets/images/black_gradient.jpeg',
-                          width: 170,
-                          height: 300,
-                          fit: BoxFit.cover,
-                        )
+                                'assets/images/black_gradient.jpeg',
+                                width: 170,
+                                height: 300,
+                                fit: BoxFit.cover,
+                              )
                             : Image.file(
-                          _image!,
-                          width: 170,
-                          height: 300,
-                          fit: BoxFit.cover,
-                        ),
+                                _image!,
+                                width: 170,
+                                height: 300,
+                                fit: BoxFit.cover,
+                              ),
                       ),
                     ),
                   ),
@@ -177,7 +236,11 @@ class _MyAppState extends State<MyApp> {
                     padding: EdgeInsets.all(8.0),
                     child: Text(
                       'Подпись к изображению',
-                      style: TextStyle(color: Colors.white, fontFamily: "Raleway", fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: "Raleway",
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -203,15 +266,23 @@ class RandomWords extends StatefulWidget {
 class RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
 
-  final _biggerFont = const TextStyle(fontSize: 18.0, color: Colors.white, fontFamily: "Raleway",fontWeight: FontWeight.w600);
+  final _biggerFont = const TextStyle(
+      fontSize: 18.0,
+      color: Colors.white,
+      fontFamily: "Raleway",
+      fontWeight: FontWeight.w600);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold (
+    return Scaffold(
       appBar: AppBar(
         surfaceTintColor: Colors.transparent,
         backgroundColor: Colors.black,
-        title: Text('Friends', style: TextStyle(color: Colors.blueGrey[200], fontFamily: "Playball", fontSize: 30)),
+        title: Text('Friends',
+            style: TextStyle(
+                color: Colors.blueGrey[200],
+                fontFamily: "Playball",
+                fontSize: 30)),
       ),
       body: _buildSuggestions(),
     );

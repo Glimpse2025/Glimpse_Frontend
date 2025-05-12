@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:glimpse/ApiClient.dart';
 import 'package:glimpse/main.dart';
 import 'package:glimpse/registry.dart';
+import 'package:glimpse/token_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Authentication extends StatefulWidget {
@@ -46,8 +47,7 @@ class _AuthenticationState extends State<Authentication> {
         final String token = response['token'];
 
         // Сохранение токена
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('auth_token', token);
+        await saveToken(token);
 
         // Переход на главный экран
         Navigator.pushReplacement(
