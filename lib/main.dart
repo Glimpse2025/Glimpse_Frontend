@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:glimpse/features/authentication/view/authentication.dart';
-import 'package:glimpse/features/home/home_screen.dart';
-import 'package:glimpse/token_manager.dart';
+import 'package:glimpse/features/common/di/service_locator.dart';
+import 'package:glimpse/features/home/view/home_screen.dart';
+import 'package:glimpse/features/authentication/domain/token_manager.dart';
 
-void main() => runApp(AppStart());
+void main() {
+  setupServiceLocator();
+  runApp(AppStart());
+}
 
 class AppStart extends StatelessWidget {
   @override

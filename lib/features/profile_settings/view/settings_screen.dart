@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:glimpse/features/authentication/view/authentication.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Settings extends StatefulWidget {
   @override
@@ -8,6 +10,11 @@ class Settings extends StatefulWidget {
 class _SettingsState extends State<Settings> {
   String _status = 'Добавьте статус';
   String _selectedLanguage = 'Русский';
+
+  Future<void> deleteToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +34,6 @@ class _SettingsState extends State<Settings> {
           crossAxisAlignment: CrossAxisAlignment.center,
           // Центрирование по горизонтали
           children: [
-
             SizedBox(height: 20),
 
             CircleAvatar(
@@ -37,17 +43,24 @@ class _SettingsState extends State<Settings> {
 
             SizedBox(height: 10),
 
-            ElevatedButton( // Кнопка "Сменить аватарку"
+            ElevatedButton(
+              // Кнопка "Сменить аватарку"
               onPressed: () {
                 // TODO: Implement change avatar functionality
                 print('Сменить аватарку tapped');
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueGrey[700], // Цвет фона кнопки
-                foregroundColor: Colors.white, // Цвет текста кнопки
+                backgroundColor: Colors.blueGrey[700],
+                // Цвет фона кнопки
+                foregroundColor: Colors.white,
+                // Цвет текста кнопки
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                textStyle: TextStyle(fontSize: 16, fontFamily: "Raleway", fontWeight: FontWeight.w600),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                textStyle: TextStyle(
+                    fontSize: 16,
+                    fontFamily: "Raleway",
+                    fontWeight: FontWeight.w600),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               child: Text('Сменить аватарку'),
             ),
@@ -77,7 +90,11 @@ class _SettingsState extends State<Settings> {
                         EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
                     child: Text(
                       _status,
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontFamily: "Raleway", fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontFamily: "Raleway",
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                   SizedBox(height: 20),
@@ -87,8 +104,7 @@ class _SettingsState extends State<Settings> {
                         color: Colors.white,
                         fontSize: 16,
                         fontFamily: "Raleway",
-                        fontWeight: FontWeight.w600
-                    ),
+                        fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 8),
                   Container(
@@ -105,7 +121,10 @@ class _SettingsState extends State<Settings> {
                         return DropdownMenuItem<String>(
                           value: value,
                           child: Text(value,
-                              style: TextStyle(color: Colors.white, fontFamily: "Raleway", fontWeight: FontWeight.w600)),
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: "Raleway",
+                                  fontWeight: FontWeight.w600)),
                         );
                       }).toList(),
                       onChanged: (String? newValue) {
@@ -120,6 +139,35 @@ class _SettingsState extends State<Settings> {
                     ),
                   ),
                 ],
+              ),
+            ),
+
+            Spacer(),
+
+            Padding(
+              padding: const EdgeInsets.only(bottom: 30.0),
+              child: ElevatedButton(
+                onPressed: () async {
+                  await deleteToken();
+                  // После удаления токена перенаправляем на экран авторизации
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => Authentication()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[700],
+                  // Красный цвет для кнопки выхода
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                  textStyle: TextStyle(
+                      fontSize: 16,
+                      fontFamily: "Raleway",
+                      fontWeight: FontWeight.w600),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                child: Text('Выйти из профиля'),
               ),
             ),
           ],

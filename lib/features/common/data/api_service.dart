@@ -57,4 +57,29 @@ abstract class ApiService {
       throw Exception('Failed to delete data at $endpoint. Status code: ${response.statusCode}, body: ${response.body}');
     }
   }
+
+  // Метод для отправки файлов
+  Future<Map<String, dynamic>> uploadFile(String endpoint, String filePath, {Map<String, String>? fields}) async {
+    var request = http.MultipartRequest('POST', Uri.parse('$baseUrl/$endpoint'));
+
+    // Добавляем файл
+    request.files.add(await http.MultipartFile.fromPath('image', filePath));
+
+    // Добавляем дополнительные поля, если они есть
+    if (fields != null) {
+      request.fields.addAll(fields);
+    }
+
+    // Отправляем запрос
+    var streamedResponse = await request.send();
+
+    // Получаем ответ
+    var response = await http.Response.fromStream(streamedResponse);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to upload file to $endpoint. Status code: ${response.statusCode}, body: ${response.body}');
+    }
+  }
 }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:glimpse/features/common/data/api_client.dart';
 import 'package:glimpse/features/authentication/view/registry.dart';
-import 'package:glimpse/features/home/home_screen.dart';
-import 'package:glimpse/token_manager.dart';
+import 'package:glimpse/features/home/view/home_screen.dart';
+import 'package:glimpse/features/authentication/domain/token_manager.dart';
 
 class Authentication extends StatefulWidget {
   @override
@@ -54,8 +54,7 @@ class _AuthenticationState extends State<Authentication> {
           MaterialPageRoute(builder: (context) => HomeScreen()),
         );
       } else {
-        // Аутентификация не удалась
-        _showError(response['message'] ?? "Неверная почта или пароль.");
+        _showError(response['error'] ?? "Неверная почта или пароль.");
       }
     } catch (error) {
       print("Error during login: $error");

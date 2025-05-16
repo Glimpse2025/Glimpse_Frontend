@@ -34,4 +34,8 @@ class PostsService extends ApiService {
   Future<Map<String, dynamic>> getPostLikesCount(int postId) async {
     return await get('api/posts/$postId/likes/count');
   }
+
+  Future<Map<String, dynamic>> uploadImage(String imagePath, int userId) async {
+    return await uploadFile('api/upload/$userId', imagePath);
+  }
 }

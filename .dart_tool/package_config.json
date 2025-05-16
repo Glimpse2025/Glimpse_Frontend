@@ -158,6 +158,12 @@
       "languageVersion": "3.2"
     },
     {
+      "name": "get_it",
+      "rootUri": "file:///C:/Users/agapo/AppData/Local/Pub/Cache/hosted/pub.dev/get_it-7.7.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
       "name": "http",
       "rootUri": "file:///C:/Users/agapo/AppData/Local/Pub/Cache/hosted/pub.dev/http-0.13.6",
       "packageUri": "lib/",
@@ -458,7 +464,7 @@
       "languageVersion": "3.6"
     }
   ],
-  "generated": "2025-05-12T20:52:45.954955Z",
+  "generated": "2025-05-16T12:52:12.502378Z",
   "generator": "pub",
   "generatorVersion": "3.6.1",
   "flutterRoot": "file:///C:/Users/agapo/flutter",
