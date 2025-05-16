@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:glimpse/features/common/data/api_client.dart';
 import 'package:glimpse/features/authentication/view/authentication.dart';
+import 'package:glimpse/features/common/domain/useful_methods.dart';
+
 
 class Registry extends StatefulWidget {
   @override
@@ -31,7 +33,7 @@ class _RegistryState extends State<Registry> {
     final String username = _usernameController.text.trim();
 
     if (email.isEmpty || password.isEmpty || username.isEmpty) {
-      _showError("Пожалуйста, заполните все поля.");
+      showErrorMessage("Пожалуйста, заполните все поля.", context);
       setState(() {
         _isLoading = false;
       });
@@ -52,26 +54,17 @@ class _RegistryState extends State<Registry> {
         );
       } else {
         // Обработка ошибок регистрации
-        _showError(
-            response['message'] ?? "Ошибка регистрации. Попробуйте еще раз.");
+        showErrorMessage(
+            response['message'] ?? "Ошибка регистрации. Попробуйте еще раз.", context);
       }
     } catch (error) {
       print("Error during registration: $error");
-      _showError("Ошибка при подключении к серверу.");
+      showErrorMessage("Ошибка при подключении к серверу.", context);
     } finally {
       setState(() {
         _isLoading = false;
       });
     }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
 
   void _showSuccess(String message) {

@@ -3,13 +3,14 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:glimpse/features/common/data/api_client.dart';
-import 'package:glimpse/features/authentication/view/authentication.dart';
 import 'package:glimpse/features/common/data/models.dart';
-import 'package:glimpse/features/common/di/service_locator.dart';
+import 'package:glimpse/features/common/domain/useful_methods.dart';
+import 'package:glimpse/features/home/domain/load_user_data.dart';
 import 'package:glimpse/features/profile_settings/view/settings_screen.dart';
 import 'package:glimpse/features/authentication/domain/token_manager.dart';
+import 'package:glimpse/features/home/domain/new_post_upload.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:glimpse/features/posts/domain/post_upload.dart';
+
 import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
@@ -17,94 +18,49 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> implements UserState {
   User? _user;
+
+  @override
+  set user(User value) {
+    setState(() {
+      _user = value;
+    });
+  }
+
+  @override
+  void updateLoadingState(bool isLoading) {
+    setState(() {
+      _isLoading = isLoading;
+    });
+  }
+
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    final token = await getToken();
-    if (token != null) {
-      try {
-        final response = await http.get(
-          Uri.parse('${ApiClient.baseUrl}/api/user'),
-          headers: {'Authorization': 'Bearer $token'},
-        );
-
-        if (response.statusCode == 200) {
-          final userData = jsonDecode(response.body);
-          setState(() {
-            _user = User.fromJson(userData);
-            _isLoading = false;
-          });
-        } else {
-          print('Failed to load user data: ${response.statusCode}');
-          // Обработайте ошибку, например, удалите токен и перенаправьте на страницу входа
-          await deleteToken();
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => Authentication()),
-          );
-        }
-      } catch (e) {
-        print('Error loading user data: $e');
-        // Обработайте ошибку подключения
-      }
-    } else {
-      // Если токена нет, перенаправляем на страницу входа
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => Authentication()),
-      );
-    }
+    loadUserData(context, this);
   }
 
   File? _image;
   double _opacity = 0.5;
   final ImagePicker _picker = ImagePicker();
-  final PostUpload _postUpload = getIt<PostUpload>();
 
   Future _getImage() async {
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.camera);
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.camera);
 
     setState(() {
       if (pickedFile != null) {
         _image = File(pickedFile.path);
         _opacity = 1.0;
-        _uploadImageToServer();
+        uploadImageToServer(_image!, _user!, context);
       } else {
         print('No image selected.');
         _opacity = 0.5;
       }
     });
-  }
-
-  Future<void> _uploadImageToServer() async {
-    try {
-      final imageUrl = await _postUpload.uploadImage(_image!, _user!.userId);
-
-      if (imageUrl != null) {
-        print('Изображение успешно загружено: $imageUrl');
-      } else {
-        print('Не удалось получить URL изображения');
-        _showErrorMessage('Не удалось загрузить изображение');
-      }
-    } catch (e) {
-      // Обработка ошибок
-      print('Ошибка при загрузке изображения или при получении user_id: $e');
-      _showErrorMessage('Ошибка при загрузке на сервер: $e');
-    }
-  }
-
-  void _showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
-    );
   }
 
   @override
@@ -143,7 +99,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => Settings()),
+                      MaterialPageRoute(
+                          builder: (context) => Settings(user: _user!)),
                     );
                   },
                   child: CircleAvatar(
@@ -184,17 +141,17 @@ class _HomeScreenState extends State<HomeScreen> {
                       opacity: _opacity,
                       child: _image == null
                           ? Image.asset(
-                        'assets/images/black_gradient.jpeg',
-                        width: 170,
-                        height: 300,
-                        fit: BoxFit.cover,
-                      )
+                              'assets/images/black_gradient.jpeg',
+                              width: 170,
+                              height: 300,
+                              fit: BoxFit.cover,
+                            )
                           : Image.file(
-                        _image!,
-                        width: 170,
-                        height: 300,
-                        fit: BoxFit.cover,
-                      ),
+                              _image!,
+                              width: 170,
+                              height: 300,
+                              fit: BoxFit.cover,
+                            ),
                     ),
                   ),
                 ),
@@ -212,12 +169,31 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          if (_user!=null)
-            Expanded(
-              child: FriendList(userId: _user!.userId),
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Friends',
+                style: TextStyle(
+                    color: Colors.blueGrey[200],
+                    fontFamily: "Playball",
+                    fontSize: 30),
+              ),
             ),
-          if (_user==null)
-            Spacer(
+          ),
+          if (_user != null)
+            Expanded(
+              child: _user != null
+                  ? FriendList(userId: _user!.userId)
+                  : Center(child: Text('Загрузка данных пользователя...')),
+            ),
+          if (_user == null)
+            Expanded(
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
             ),
         ],
       ),
@@ -262,11 +238,11 @@ class _FriendListState extends State<FriendList> {
           });
         } else {
           print('Failed to load friends: ${response.statusCode}');
-          // Handle error appropriately
+          showErrorMessage('Ошибка при загрузке списка друзей', context);
         }
       } catch (e) {
         print('Error loading friends: $e');
-        // Handle error appropriately
+        showErrorMessage('Ошибка при загрузке списка друзей: $e', context);
       }
     } else {
       /// Handle no token case
@@ -275,27 +251,18 @@ class _FriendListState extends State<FriendList> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        surfaceTintColor: Colors.transparent,
-        backgroundColor: Colors.black,
-        title: Text('Friends',
-            style: TextStyle(
-                color: Colors.blueGrey[200],
-                fontFamily: "Playball",
-                fontSize: 30)),
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : _friends.isEmpty
-          ? Center(
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator());
+    } else if (_friends.isEmpty) {
+      return Center(
         child: Text(
           'No friends yet.',
           style: TextStyle(color: Colors.white),
         ),
-      )
-          : _buildFriendList(),
-    );
+      );
+    } else {
+      return _buildFriendList();
+    }
   }
 
   Widget _buildFriendList() {

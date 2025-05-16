@@ -1,9 +1,9 @@
 class User {
   final int userId;
-  final String username;
+  String username;
   final String email;
-  final String? profilePic; // Может быть null
-  final String status;
+  String? profilePic; // Может быть null
+  String status;
 
   User({
     required this.userId,
@@ -24,11 +24,16 @@ class User {
   }
 }
 
+abstract class UserState {
+  set user(User value);
+  void updateLoadingState(bool isLoading);
+}
+
 class Post {
   final int postId;
   final int userId;
   final String imagePath;
-  final String? caption; // Может быть null
+  String? caption; // Может быть null
   final DateTime timestamp;
 
   Post({

@@ -3,6 +3,7 @@ import 'package:glimpse/features/common/data/api_client.dart';
 import 'package:glimpse/features/authentication/view/registry.dart';
 import 'package:glimpse/features/home/view/home_screen.dart';
 import 'package:glimpse/features/authentication/domain/token_manager.dart';
+import 'package:glimpse/features/common/domain/useful_methods.dart';
 
 class Authentication extends StatefulWidget {
   @override
@@ -30,7 +31,7 @@ class _AuthenticationState extends State<Authentication> {
     final String password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      _showError("Пожалуйста, заполните все поля.");
+      showErrorMessage("Пожалуйста, заполните все поля.", context);
       setState(() {
         _isLoading = false;
       });
@@ -49,30 +50,22 @@ class _AuthenticationState extends State<Authentication> {
         await saveToken(token);
 
         // Переход на главный экран
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
+              (route) => false,
         );
       } else {
-        _showError(response['error'] ?? "Неверная почта или пароль.");
+        showErrorMessage(response['error'] ?? "Неверная почта или пароль.", context);
       }
     } catch (error) {
       print("Error during login: $error");
-      _showError("Ошибка при подключении к серверу.");
+      showErrorMessage("Аккаунта не существует или проблемы с подключением к серверу", context);
     } finally {
       setState(() {
         _isLoading = false;
       });
     }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
   }
 
   @override
@@ -130,7 +123,7 @@ class _AuthenticationState extends State<Authentication> {
               const SizedBox(height: 10),
               TextButton(
                 onPressed: () {
-                  Navigator.push(
+                  Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => Registry()),
                   );
