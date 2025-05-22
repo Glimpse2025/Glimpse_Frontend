@@ -56,4 +56,18 @@ class PostRepository {
     // Записываем байты в файл
     return await tempFile.writeAsBytes(bytes);
   }
+
+  Future<bool?> updatePostCaption(int postId, String caption) async {
+    try {
+      final response = await _postsService.updatePostCaption(postId, caption);
+      if (response.containsValue('Caption updated successfully')) {
+        // Обновление прошло успешно
+        return true;
+      }
+      return null;
+    }  catch (e) {
+      print('Error updating caption: $e');
+      throw Exception('Error updating caption: $e');
+    }
+  }
 }

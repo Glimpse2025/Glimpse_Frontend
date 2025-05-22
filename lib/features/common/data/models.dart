@@ -47,6 +47,22 @@ class Post {
     required this.timestamp,
   });
 
+  Post copyWith({
+    int? postId,
+    int? userId,
+    String? imagePath,
+    String? caption,
+    DateTime? timestamp,
+  }) {
+    return Post(
+      postId: postId ?? this.postId,
+      userId: userId ?? this.userId,
+      imagePath: imagePath ?? this.imagePath,
+      caption: caption ?? this.caption,
+      timestamp: timestamp ?? this.timestamp,
+    );
+  }
+
   factory Post.fromJson(Map<String, dynamic> json) {
     return Post(
       postId: json['post_id'] as int,

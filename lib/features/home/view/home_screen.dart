@@ -6,6 +6,7 @@ import 'package:glimpse/features/common/data/api_client.dart';
 import 'package:glimpse/features/common/data/models.dart';
 import 'package:glimpse/features/common/domain/useful_methods.dart';
 import 'package:glimpse/features/home/domain/load_data.dart';
+import 'package:glimpse/features/home/domain/update_caption.dart';
 import 'package:glimpse/features/profile_settings/view/settings_screen.dart';
 import 'package:glimpse/features/authentication/domain/token_manager.dart';
 import 'package:glimpse/features/home/domain/new_post_upload.dart';
@@ -22,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
   User? _user;
   Post? _post;
   File? _postImage;
+  String? _postCaption;
   bool _isLoading = true;
 
   @override
@@ -43,23 +45,28 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
       }
       if (_user != null) {
         await loadPostData(context, this);
-        _loadPostImage();
+        _loadPostImageAndCaption();
       }
     } catch (e) {
       print('Error in _loadData: $e');
+      showErrorMessage('Ошибка при загрузке данных', context);
     }
   }
 
-  Future<void> _loadPostImage() async {
+  Future<void> _loadPostImageAndCaption() async {
     if (_post != null) {
       try {
         File image = await getImage(_post!.imagePath);
         setState(() {
           _postImage = image;
+          _postCaption = _post!.caption?.isEmpty ?? true
+              ? 'Подпись к изображению'
+              : _post!.caption!;
           _opacity = 1.0;
         });
       } catch (e) {
         print('Ошибка при загрузке изображения поста: $e');
+        showErrorMessage('Ошибка при загрузке изображения поста', context);
       }
     }
   }
@@ -70,7 +77,8 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
       return;
     }
 
-    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.camera);
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.camera);
 
     setState(() {
       if (pickedFile != null) {
@@ -97,16 +105,61 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
     // Если поста нет, показываем либо выбранное изображение, либо заглушку
     return _image == null
         ? Image.asset(
-      'assets/images/black_gradient.jpeg',
-      width: 170,
-      height: 300,
-      fit: BoxFit.cover,
-    )
+            'assets/images/black_gradient.jpeg',
+            width: 170,
+            height: 300,
+            fit: BoxFit.cover,
+          )
         : Image.file(
-      _image!,
-      width: 170,
-      height: 300,
-      fit: BoxFit.cover,
+            _image!,
+            width: 170,
+            height: 300,
+            fit: BoxFit.cover,
+          );
+  }
+
+  Future<void> _showCaptionDialog() async {
+    final TextEditingController captionController = TextEditingController();
+    captionController.text = _post?.caption ?? '';
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.blueGrey[900],
+          title: Text(
+            'Изменить подпись',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: TextField(
+            controller: captionController,
+            style: TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Введите подпись...',
+              hintStyle: TextStyle(color: Colors.white70),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.blueGrey[200]!),
+              ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.blueGrey[200]!),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: Text('Отмена', style: TextStyle(color: Colors.white)),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: Text('Сохранить', style: TextStyle(color: Colors.white)),
+              onPressed: () {
+                updatePostCaption(captionController.text, _post!, this);
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -192,13 +245,21 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
                 ),
                 Padding(
                   padding: EdgeInsets.all(8.0),
-                  child: Text(
-                    'Подпись к изображению',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontFamily: "Raleway",
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600),
+                  child: Container(
+                    width: 170,
+                    child: InkWell(
+                      onTap: _post != null ? _showCaptionDialog : null,
+                      child: Text(
+                        _postCaption ?? 'Подпись к изображению',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: "Raleway",
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -247,7 +308,7 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
     setState(() {
       _post = value;
       if (value != null) {
-        _loadPostImage();
+        _loadPostImageAndCaption();
       }
     });
   }
