@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:glimpse/features/common/data/api_client.dart';
 import 'package:glimpse/features/common/data/models.dart';
 import 'package:glimpse/features/common/domain/useful_methods.dart';
-import 'package:glimpse/features/home/domain/load_user_data.dart';
+import 'package:glimpse/features/home/domain/load_data.dart';
 import 'package:glimpse/features/profile_settings/view/settings_screen.dart';
 import 'package:glimpse/features/authentication/domain/token_manager.dart';
 import 'package:glimpse/features/home/domain/new_post_upload.dart';
@@ -18,49 +18,96 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> implements UserState {
+class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
   User? _user;
-
-  @override
-  set user(User value) {
-    setState(() {
-      _user = value;
-    });
-  }
-
-  @override
-  void updateLoadingState(bool isLoading) {
-    setState(() {
-      _isLoading = isLoading;
-    });
-  }
-
+  Post? _post;
+  File? _postImage;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    loadUserData(context, this);
+    _loadData(true);
   }
 
   File? _image;
   double _opacity = 0.5;
   final ImagePicker _picker = ImagePicker();
 
+  Future<void> _loadData(bool start) async {
+    try {
+      if (start) {
+        await loadUserData(context, this);
+      } else {
+        await uploadImageToServer(_image!, _user!, context);
+      }
+      if (_user != null) {
+        await loadPostData(context, this);
+        _loadPostImage();
+      }
+    } catch (e) {
+      print('Error in _loadData: $e');
+    }
+  }
+
+  Future<void> _loadPostImage() async {
+    if (_post != null) {
+      try {
+        File image = await getImage(_post!.imagePath);
+        setState(() {
+          _postImage = image;
+          _opacity = 1.0;
+        });
+      } catch (e) {
+        print('Ошибка при загрузке изображения поста: $e');
+      }
+    }
+  }
+
   Future _getImage() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.camera);
+    // Если пост уже существует, не позволяем делать новый
+    if (_post != null) {
+      return;
+    }
+
+    final XFile? pickedFile = await _picker.pickImage(source: ImageSource.camera);
 
     setState(() {
       if (pickedFile != null) {
         _image = File(pickedFile.path);
         _opacity = 1.0;
-        uploadImageToServer(_image!, _user!, context);
+        _loadData(false);
       } else {
         print('No image selected.');
         _opacity = 0.5;
       }
     });
+  }
+
+  Widget _buildImageWidget() {
+    // Если есть существующий пост, показываем его изображение
+    if (_post != null && _postImage != null) {
+      return Image.file(
+        _postImage!,
+        width: 170,
+        height: 300,
+        fit: BoxFit.cover,
+      );
+    }
+    // Если поста нет, показываем либо выбранное изображение, либо заглушку
+    return _image == null
+        ? Image.asset(
+      'assets/images/black_gradient.jpeg',
+      width: 170,
+      height: 300,
+      fit: BoxFit.cover,
+    )
+        : Image.file(
+      _image!,
+      width: 170,
+      height: 300,
+      fit: BoxFit.cover,
+    );
   }
 
   @override
@@ -134,24 +181,12 @@ class _HomeScreenState extends State<HomeScreen> implements UserState {
             child: Column(
               children: [
                 InkWell(
-                  onTap: _getImage,
+                  onTap: _post == null ? _getImage : null,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10.0),
                     child: Opacity(
                       opacity: _opacity,
-                      child: _image == null
-                          ? Image.asset(
-                              'assets/images/black_gradient.jpeg',
-                              width: 170,
-                              height: 300,
-                              fit: BoxFit.cover,
-                            )
-                          : Image.file(
-                              _image!,
-                              width: 170,
-                              height: 300,
-                              fit: BoxFit.cover,
-                            ),
+                      child: _buildImageWidget(),
                     ),
                   ),
                 ),
@@ -199,6 +234,36 @@ class _HomeScreenState extends State<HomeScreen> implements UserState {
       ),
     );
   }
+
+  @override
+  set user(User value) {
+    setState(() {
+      _user = value;
+    });
+  }
+
+  @override
+  set post(Post? value) {
+    setState(() {
+      _post = value;
+      if (value != null) {
+        _loadPostImage();
+      }
+    });
+  }
+
+  @override
+  void updateLoadingState(bool isLoading) {
+    setState(() {
+      _isLoading = isLoading;
+    });
+  }
+
+  @override
+  User get user => _user!;
+
+  @override
+  Post? get post => _post;
 }
 
 class FriendList extends StatefulWidget {

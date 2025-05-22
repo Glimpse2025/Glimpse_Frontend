@@ -24,8 +24,11 @@ class User {
   }
 }
 
-abstract class UserState {
+abstract class UserAndPostState {
   set user(User value);
+  User get user;
+  set post(Post? value);
+  Post? get post;
   void updateLoadingState(bool isLoading);
 }
 

@@ -10,17 +10,16 @@ final PostRepository _postRepository = getIt<PostRepository>();
 
 Future<void> uploadImageToServer(File? _image, User _user, BuildContext context) async {
   try {
-    final imageUrl = await _postRepository.uploadImage(_image!, _user.userId);
+    final postID = await _postRepository.uploadImage(_image!, _user.userId);
 
-    if (imageUrl != null) {
-      print('Изображение успешно загружено: $imageUrl');
+    if (postID != null) {
+      print('Пост успешно опубликован с id: $postID');
     } else {
-      print('Не удалось получить URL изображения');
-      showErrorMessage('Не удалось загрузить изображение', context);
+      print('Не удалось получить id поста');
+      showErrorMessage('Не удалось выложить пост', context);
     }
   } catch (e) {
-    // Обработка ошибок
-    print('Ошибка при загрузке изображения или при получении user_id: $e');
+    print('Ошибка при загрузке изображения или при опубликовании поста: $e');
     showErrorMessage('Ошибка при загрузке на сервер: $e', context);
   }
 }

@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:typed_data' show Uint8List;
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 abstract class ApiService {
@@ -80,6 +82,17 @@ abstract class ApiService {
       return jsonDecode(response.body);
     } else {
       throw Exception('Failed to upload file to $endpoint. Status code: ${response.statusCode}, body: ${response.body}');
+    }
+  }
+
+  //Метод для получения файлов
+  Future<Uint8List> getImageFile(String imagePath) async {
+    final response = await http.get(Uri.parse('$baseUrl/images/$imagePath'));
+
+    if (response.statusCode == 200) {
+      return response.bodyBytes;  // Возвращаем байты файла
+    } else {
+      throw Exception('Failed to load image from $imagePath. Status code: ${response.statusCode}');
     }
   }
 }
