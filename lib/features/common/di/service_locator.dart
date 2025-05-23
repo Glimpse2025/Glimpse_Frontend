@@ -1,7 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:glimpse/features/home/data/home_page_repository.dart';
 import 'package:glimpse/features/home/data/home_page_service.dart';
-import 'package:glimpse/features/posts/data/post_repository.dart';
+import 'package:glimpse/features/posts/data/posts_repository.dart';
 import 'package:glimpse/features/posts/data/posts_service.dart';
 import 'package:glimpse/features/profile_settings/data/settings_repository.dart';
 import 'package:glimpse/features/profile_settings/data/settings_service.dart';
@@ -16,8 +16,8 @@ void setupServiceLocator() {
   getIt.registerLazySingleton<SettingsService>(() => SettingsService(baseUrl: ApiClient.baseUrl));
 
   // Регистрация репозиториев
-  getIt.registerLazySingleton<PostRepository>(
-          () => PostRepository(postsService: getIt<PostsService>())
+  getIt.registerLazySingleton<PostsRepository>(
+          () => PostsRepository(postsService: getIt<PostsService>())
   );
   getIt.registerLazySingleton<HomePageRepository>(
           () => HomePageRepository(homePageService: getIt<HomePageService>())

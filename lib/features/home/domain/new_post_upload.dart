@@ -3,14 +3,14 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:glimpse/features/common/data/models.dart';
 import 'package:glimpse/features/common/di/service_locator.dart';
-import 'package:glimpse/features/posts/data/post_repository.dart';
+import 'package:glimpse/features/posts/data/posts_repository.dart';
 import 'package:glimpse/features/common/domain/useful_methods.dart';
 
-final PostRepository _postRepository = getIt<PostRepository>();
+final PostsRepository _postsRepository = getIt<PostsRepository>();
 
 Future<void> uploadImageToServer(File? _image, User _user, BuildContext context) async {
   try {
-    final postID = await _postRepository.uploadImage(_image!, _user.userId);
+    final postID = await _postsRepository.uploadImage(_image!, _user.userId);
 
     if (postID != null) {
       print('Пост успешно опубликован с id: $postID');

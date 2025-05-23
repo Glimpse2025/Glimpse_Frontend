@@ -7,10 +7,10 @@ import 'package:glimpse/features/authentication/view/authentication.dart';
 import 'package:glimpse/features/common/data/models.dart';
 import 'package:glimpse/features/common/di/service_locator.dart';
 import 'package:glimpse/features/home/data/home_page_repository.dart';
-import 'package:glimpse/features/posts/data/post_repository.dart';
+import 'package:glimpse/features/posts/data/posts_repository.dart';
 
 final HomePageRepository _homePageRepository = getIt<HomePageRepository>();
-final PostRepository _postRepository = getIt<PostRepository>();
+final PostsRepository _postsRepository = getIt<PostsRepository>();
 
 Future<void> loadUserData(BuildContext context,
     [UserAndPostState? state]) async {
@@ -50,7 +50,7 @@ Future<void> loadPostData(BuildContext context,
       print('User: ${state.user}');
       print('UserId: ${state.user.userId}');
 
-      final postData = await _postRepository.getUserPost(state.user.userId);
+      final postData = await _postsRepository.getUserPost(state.user.userId);
       print('PostData: $postData');
 
       final now = DateTime.now();
@@ -83,9 +83,18 @@ Future<void> loadPostData(BuildContext context,
 
 Future<File> getImage(String imagePath) async {
   try {
-    return await _postRepository.getImageAsFile(imagePath);
+    return await _postsRepository.getImageAsFile(imagePath);
   } catch (e) {
     print('Error loading post data: $e');
     throw Exception('Failed to load image: $e');
+  }
+}
+
+Future<String?> getLikeCount(int postID) async {
+  try {
+    return await _postsRepository.getPostLikeCount(postID);
+  } catch (e) {
+    print('Error getting post like count: $e');
+    throw Exception('Error getting post like count: $e');
   }
 }

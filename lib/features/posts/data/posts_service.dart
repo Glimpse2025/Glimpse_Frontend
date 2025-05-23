@@ -25,6 +25,10 @@ class PostsService extends ApiService {
     return await post('api/likes', {'post_id': postId, 'user_id': userId});
   }
 
+  Future<Map<String, dynamic>> unlikePost(int postId, int userId) async {
+    return await delete('/api/likes/$postId/$userId');
+  }
+
   Future<List<dynamic>> getUserPost(int userId) async {
     return await get('api/users/$userId/post');
   }

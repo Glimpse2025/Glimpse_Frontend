@@ -7,6 +7,7 @@ import 'package:glimpse/features/common/data/models.dart';
 import 'package:glimpse/features/common/domain/useful_methods.dart';
 import 'package:glimpse/features/home/domain/load_data.dart';
 import 'package:glimpse/features/home/domain/update_caption.dart';
+import 'package:glimpse/features/posts/domain/like_post.dart';
 import 'package:glimpse/features/profile_settings/view/settings_screen.dart';
 import 'package:glimpse/features/authentication/domain/token_manager.dart';
 import 'package:glimpse/features/home/domain/new_post_upload.dart';
@@ -24,6 +25,8 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
   Post? _post;
   File? _postImage;
   String? _postCaption;
+  String? _likeCount;
+  String _likePic = 'assets/images/heart_empty.png';
   bool _isLoading = true;
 
   @override
@@ -45,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
       }
       if (_user != null) {
         await loadPostData(context, this);
-        _loadPostImageAndCaption();
+        _loadPostScreenData();
       }
     } catch (e) {
       print('Error in _loadData: $e');
@@ -53,20 +56,21 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
     }
   }
 
-  Future<void> _loadPostImageAndCaption() async {
+  Future<void> _loadPostScreenData() async {
     if (_post != null) {
       try {
         File image = await getImage(_post!.imagePath);
+        String? count = await getLikeCount(_post!.postId);
         setState(() {
           _postImage = image;
           _postCaption = _post!.caption?.isEmpty ?? true
               ? 'Подпись к изображению'
               : _post!.caption!;
+          _likeCount = count;
           _opacity = 1.0;
         });
       } catch (e) {
-        print('Ошибка при загрузке изображения поста: $e');
-        showErrorMessage('Ошибка при загрузке изображения поста', context);
+        showErrorMessage('Ошибка при загрузке данных поста', context);
       }
     }
   }
@@ -116,6 +120,38 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
             height: 300,
             fit: BoxFit.cover,
           );
+  }
+
+  Future _likeManager() async {
+    if (_post != null) {
+      if (_likePic == 'assets/images/heart_empty.png') {
+        try {
+          await likePost(_post!.postId, _user!.userId);
+          String? count = await getLikeCount(_post!.postId);
+          setState(() {
+            _likePic = 'assets/images/heart_full.png';
+            _likeCount = count;
+          });
+        } catch (e) {
+          showErrorMessage('Ошибка при лайке поста', context);
+        }
+      } else {
+        if (_likePic == 'assets/images/heart_full.png') {
+          try {
+            await unlikePost(_post!.postId, _user!.userId);
+            String? count = await getLikeCount(_post!.postId);
+            setState(() {
+              _likePic = 'assets/images/heart_empty.png';
+              _likeCount = count;
+            });
+          } catch (e) {
+            showErrorMessage('Ошибка при анлайке поста', context);
+          }
+        }
+      }
+    } else {
+      return;
+    }
   }
 
   Future<void> _showCaptionDialog() async {
@@ -175,6 +211,7 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
           child: Icon(
             Icons.search,
             color: Colors.blueGrey[200]!,
+            size: 32.0,
           ),
         ),
         title: Row(
@@ -218,53 +255,141 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
       backgroundColor: Colors.black,
       body: Column(
         children: [
-          Container(
-            margin: EdgeInsets.all(10.0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10.0),
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.blueGrey[400]!,
-                  Colors.blueGrey[900]!,
-                ],
-              ),
-            ),
-            child: Column(
-              children: [
-                InkWell(
-                  onTap: _post == null ? _getImage : null,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10.0),
-                    child: Opacity(
-                      opacity: _opacity,
-                      child: _buildImageWidget(),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Container(
-                    width: 170,
-                    child: InkWell(
-                      onTap: _post != null ? _showCaptionDialog : null,
-                      child: Text(
-                        _postCaption ?? 'Подпись к изображению',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontFamily: "Raleway",
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Левая колонка с иконками
+              Container(
+                height: 316,
+                // Высота должна соответствовать высоте центральной колонки
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(top: 150.0),
+                      // Подстройте отступ по необходимости
+                      child: Column(
+                        children: [
+                          /*Image.asset(
+                            'assets/images/heart_empty.png',
+                            width: 42,
+                            height: 42,
+                          ),*/
+                          Image.asset(
+                            'assets/images/comments.png',
+                            width: 38,
+                            height: 38,
+                          ),
+                          SizedBox(height: 20),
+                          Image.asset(
+                            'assets/images/share.png',
+                            width: 35,
+                            height: 35,
+                          ),
+                          SizedBox(height: 20),
+                          Image.asset(
+                            'assets/images/download.png',
+                            width: 33,
+                            height: 33,
+                          ),
+                          SizedBox(height: 5),
+                        ],
                       ),
                     ),
+                  ],
+                ),
+              ),
+              // Центральная колонка с основным контентом
+              Container(
+                margin: EdgeInsets.all(10.0),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10.0),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color.fromRGBO(255, 160, 140, 1),
+                      //Colors.amberAccent[400]!,
+                      Colors.pinkAccent[400]!,
+                      Colors.blueGrey[300]!,
+                      Colors.blueGrey[700]!,
+                    ],
                   ),
                 ),
-              ],
-            ),
+                child: Column(
+                  children: [
+                    InkWell(
+                      onTap: _post == null ? _getImage : null,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10.0),
+                        child: Opacity(
+                          opacity: _opacity,
+                          child: _buildImageWidget(),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Container(
+                        width: 170,
+                        child: InkWell(
+                          onTap: _post != null ? _showCaptionDialog : null,
+                          child: Text(
+                            _postCaption ?? 'Подпись к изображению',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: "Raleway",
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Правая колонка с иконкой загрузки
+              Container(
+                height: 316,
+                // Высота должна соответствовать высоте центральной колонки
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(top: 150.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            _likeCount ?? '',
+                            style: TextStyle(
+                                color: Color.fromRGBO(255, 160, 140, 1),
+                                fontFamily: "Raleway",
+                                fontSize: 22,
+                                fontWeight: FontWeight.w600),
+                          ),
+                          SizedBox(height: 5),
+                          InkWell(
+                            onTap: _post != null ? _likeManager : null,
+                            child: Image.asset(
+                              _likePic,
+                              width: 43,
+                              height: 43,
+                            ),
+                          ),
+                          SizedBox(height: 2),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
+
+          // Заголовок Friends и список друзей
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -308,7 +433,7 @@ class _HomeScreenState extends State<HomeScreen> implements UserAndPostState {
     setState(() {
       _post = value;
       if (value != null) {
-        _loadPostImageAndCaption();
+        _loadPostScreenData();
       }
     });
   }
